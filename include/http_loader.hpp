@@ -28,6 +28,6 @@ namespace http_loader
 {
     int init(uint_least8_t mac[6]);
     void maintain();
-    load_error load(size_t max_card_count, card *cards, const char *hostname, int port, const char *path);
+    load_error load(card_db &db, const char *hostname, int port, const char *path);
     const char *get_load_error_message(load_error error);
 };

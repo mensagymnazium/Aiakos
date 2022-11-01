@@ -1,57 +1,48 @@
 #include <Arduino.h>
-#include <pico/multicore.h>
 
-#include <Ethernet.h>
+#include <card_db.hpp>
+#include <http_loader.hpp>
 
-#include <db.hpp>
-#include <coprocessor.hpp>
+static_card_db<4096> db;
+
+const unsigned long refresh_rate = 1000;
+unsigned long last_refresh = (unsigned long)-refresh_rate;
 
 void setup()
 {
-    Serial1.begin(9600);
+    Serial.begin(9600);
 
-    multicore_launch_core1(coprocessor_main);
+    uint_least8_t mac[6] = {0x7A, 0x89, 0x84, 0x0A, 0x06, 0x9C};
+
+    if (!http_loader::init(mac))
+    {
+        Serial.println("Failed to connect to LAN");
+    }
 }
 
 void loop()
 {
-    if (multicore_fifo_rvalid())
+    if (millis() - last_refresh > refresh_rate)
     {
-        co_to_main_message result = (co_to_main_message)multicore_fifo_pop_blocking();
-        switch (result)
+        Serial.println("Fetching card list...");
+
+        load_error error = http_loader::load(db, "storage.googleapis.com", 80, "/ikaros-static/cardlist.txt");
+
+        Serial.println(http_loader::get_load_error_message(error));
+
+        if (error == 0)
         {
-        case init_ok:
-            Serial1.println("Ethernet initialized");
-            break;
-
-        case init_fail:
-            Serial1.println("Ethernet initialization failed");
-            break;
+            Serial.println("Cards:");
+            for (card c : db)
+            {
+                Serial.println(c.id, HEX);
+            }
         }
-    }
-}
 
-/*
-if (millis() - last_refresh > refresh_rate)
-{
-    Serial.println("Fetching card list...");
+        Serial.println();
 
-    load_error error = http_loader::load(&db, "storage.googleapis.com", 80, "/ikaros-static/cardlist.txt");
-    Serial.println(http_loader::get_load_error_message(error));
-
-    if (error == 0)
-    {
-        Serial.println("Cards:");
-        for (card c : db)
-        {
-            Serial.println(c.id, HEX);
-        }
+        last_refresh += refresh_rate;
     }
 
-    Serial.println();
-
-    last_refresh += refresh_rate;
+    http_loader::maintain();
 }
-
-http_loader::maintain();
-*/

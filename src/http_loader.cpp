@@ -103,7 +103,7 @@ void http_loader::maintain()
 
 namespace
 {
-    load_error load_impl(EthernetClient &client, size_t max_card_count, card *cards, const char *hostname, int port, const char *path)
+    load_error load_impl(EthernetClient &client, size_t max_card_count, card *cards, size_t *card_count_out, const char *hostname, int port, const char *path)
     {
         int connection_status = client.connect(hostname, port);
         if (connection_status < 0)
@@ -369,17 +369,28 @@ namespace
             card_count++;
         }
 
+        *card_count_out = card_count;
+
         return load_error::success;
     }
 }
 
-load_error http_loader::load(size_t max_card_count, card *cards, const char *hostname, int port, const char *path)
+load_error http_loader::load(card_db &db, const char *hostname, int port, const char *path)
 {
     EthernetClient client;
 
-    load_error result = load_impl(client, max_card_count, cards, hostname, port, path);
+    size_t count;
+    card *cards = new card[db.get_capacity()];
+
+    load_error result = load_impl(client, db.get_capacity(), cards, &count, hostname, port, path);
+
+    if (result == load_error::success)
+    {
+        db.load_cards(cards, count);
+    }
 
     client.stop();
+    delete[] cards;
     return result;
 }
 
