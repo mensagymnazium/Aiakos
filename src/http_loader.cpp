@@ -148,6 +148,7 @@ namespace
             reading_header_name,
             skipping_header_space,
             reading_header_value,
+            reading_line_start,
             reading_line,
             skipping_comment
         } parse_stage = checking_http_version;
@@ -158,6 +159,12 @@ namespace
             unknown
         } header_type = unknown;
 
+        enum
+        {
+            hex,
+            dec
+        } number_base = hex;
+
         string_checker http_version("HTTP/1.1");
         string_checker status_code("200");
         string_checker content_length_header("content-length");
@@ -166,7 +173,7 @@ namespace
         long remaining_content_length = -1;
 
         uint_least32_t card_id = 0;
-        int read_id_nibbles = 0;
+        uint8_t read_id_digits = 0;
 
         http_version.reset();
         status_code.reset();
@@ -234,9 +241,10 @@ namespace
                 {
                     if (is_header_line_empty)
                     {
-                        parse_stage = reading_line;
+                        parse_stage = reading_line_start;
+                        number_base = hex;
                         card_id = 0;
-                        read_id_nibbles = 0;
+                        read_id_digits = 0;
                     }
                     else
                     {
@@ -309,10 +317,22 @@ namespace
 
                 break;
 
+            case reading_line_start:
+                if (c == '\'')
+                {
+                    number_base = dec;
+                    break;
+                }
+
+                if (!is_whitespace(c))
+                    parse_stage = reading_line;
+
+                [[fallthrough]];
+
             case reading_line:
                 if (c == '\n' || c == ';')
                 {
-                    if (read_id_nibbles > 0)
+                    if (read_id_digits > 0)
                     {
                         if (card_count >= max_card_count)
                             return load_error::too_many_cards;
@@ -322,18 +342,38 @@ namespace
                     }
 
                     card_id = 0;
-                    read_id_nibbles = 0;
+                    read_id_digits = 0;
+                    number_base = hex;
 
                     if (c == ';')
                         parse_stage = skipping_comment;
+                    else
+                        parse_stage = reading_line_start;
                 }
-                else if (is_hex_digit(c))
+                else if (number_base == hex && is_hex_digit(c))
                 {
-                    if (read_id_nibbles < 8)
+                    if (read_id_digits < 8)
                     {
                         card_id <<= 4;
                         card_id |= decode_hex_digit(c);
-                        read_id_nibbles++;
+                        read_id_digits++;
+                    }
+                    else
+                    {
+                        return load_error::malformed_file;
+                    }
+                }
+                else if (number_base == dec && is_digit(c))
+                {
+                    uint_least8_t digit = decode_digit(c);
+
+                    if (card_id < (UINT32_MAX / 10) || digit <= (UINT32_MAX % 10))
+                    {
+                        card_id *= 10;
+                        card_id += digit;
+
+                        if (read_id_digits < UINT8_MAX)
+                            read_id_digits++;
                     }
                     else
                     {
@@ -348,11 +388,11 @@ namespace
 
             case skipping_comment:
                 if (c == '\n')
-                    parse_stage = reading_line;
+                    parse_stage = reading_line_start;
                 break;
             }
 
-            if (parse_stage == reading_line || parse_stage == skipping_comment)
+            if (parse_stage == reading_line || parse_stage == reading_line_start || parse_stage == skipping_comment)
             {
                 remaining_content_length--;
                 if (remaining_content_length <= 0)
@@ -360,7 +400,7 @@ namespace
             }
         }
 
-        if (read_id_nibbles > 0)
+        if (read_id_digits > 0)
         {
             if (card_count >= max_card_count)
                 return load_error::too_many_cards;
