@@ -7,16 +7,7 @@
 #include <cooldown.hpp>
 #include <pin.hpp>
 
-const uint_least8_t mac[6] = {0x7A, 0x89, 0x84, 0x0A, 0x06, 0x9C};
-
-namespace url
-{
-    const char *hostname = "storage.googleapis.com";
-    const int port = 80;
-    const char *path = "/ikaros-static/52e88f3b243506447b5c795e1437148c/cards.txt";
-}
-
-const uint32_t master_card_id = 0;
+#include <aiakos_config.hpp>
 
 static_card_db<4096> db;
 
@@ -24,7 +15,7 @@ const unsigned long refresh_rate = 15 * 60 * 1000;
 unsigned long last_refresh = (unsigned long)-refresh_rate;
 const unsigned long dhcp_retry_delay = 10 * 1000;
 
-cooldown<2> activation_cooldown(60 * 1000);
+cooldown<5> activation_cooldown(60 * 1000);
 
 impulse_pin lock(6, 1000);
 
@@ -50,7 +41,7 @@ void setup()
     reader.begin(&Serial1);
 
     uint_least8_t mac_copy[6];
-    memcpy(mac_copy, mac, sizeof(mac));
+    memcpy(mac_copy, config::mac, sizeof(config::mac));
 
     while (http_loader::init(mac_copy))
     {
@@ -81,7 +72,7 @@ void loop()
             Serial.print(id, HEX);
             Serial.println();
 
-            if (db.has_card(id) || id == master_card_id)
+            if (db.has_card(id) || id == config::master_card_id)
             {
                 Serial.println("Access granted");
 
@@ -102,7 +93,7 @@ void loop()
             led::ready.set(false);
             Serial.println("Fetching card list...");
 
-            load_error error = http_loader::load(db, url::hostname, url::port, url::path);
+            load_error error = http_loader::load(db, config::url::hostname, config::url::port, config::url::path);
 
             if (error != load_error::success)
                 led::fail.activate();
