@@ -9,7 +9,7 @@
 namespace
 {
     const long max_content_length = 0x80000;
-    const int http_timeout = 20000;
+    const int http_timeout = 10000;
 
     const char user_agent[] = "Aiakos/1.0";
 

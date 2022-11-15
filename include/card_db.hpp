@@ -14,6 +14,7 @@ public:
     virtual int load_cards(card *new_cards, size_t new_card_count) = 0;
     virtual bool has_card(uint_least32_t id) = 0;
     virtual size_t get_capacity() = 0;
+    virtual size_t get_size() = 0;
     virtual card *begin() = 0;
     virtual card *end() = 0;
 };
@@ -30,6 +31,7 @@ public:
     virtual int load_cards(card *new_cards, size_t new_card_count);
     virtual bool has_card(uint_least32_t id);
     virtual size_t get_capacity();
+    virtual size_t get_size();
     virtual card *begin();
     virtual card *end();
 };
@@ -64,6 +66,12 @@ int static_card_db<capacity>::load_cards(card *new_cards, size_t new_card_count)
     card_count = new_card_count;
 
     return 0;
+}
+
+template <size_t capacity>
+size_t static_card_db<capacity>::get_size()
+{
+    return card_count;
 }
 
 template <size_t capacity>
