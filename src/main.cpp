@@ -102,8 +102,6 @@ void loop()
         }
 
         http_loader::maintain([]
-                              {
-            if (!http_loader::is_connected())
-                led::fail.set_override(true); });
+                              { led::fail.set_override(true); });
     }
 }
