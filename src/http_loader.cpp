@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <SPI.h>
 
+#include <functional>
+
 #include <http_loader.hpp>
 
 namespace
@@ -84,21 +86,68 @@ namespace
             }
         }
     };
+
+    const unsigned long dhcp_retry_delay = 60 * 1000;
+
+    uint_least8_t mac[6] = {};
+    bool init_done = false;
+    unsigned long last_dhcp_init_attempt = (unsigned long)-dhcp_retry_delay;
+
+    bool dhcp_connected = false;
+    bool link_connected = false;
 }
 
-int http_loader::init(uint_least8_t mac[6])
+void http_loader::init(uint_least8_t mac_address[6])
 {
     Ethernet.init(17);
 
-    if (!Ethernet.begin(mac))
-        return 1;
-
-    return 0;
+    memcpy(mac, mac_address, sizeof(mac));
 }
 
-void http_loader::maintain()
+bool http_loader::is_connected()
 {
-    Ethernet.maintain();
+    return dhcp_connected && link_connected;
+}
+
+void http_loader::maintain(std::function<void()> on_reconnect_attempt)
+{
+    if (!init_done)
+    {
+        if (millis() - last_dhcp_init_attempt >= dhcp_retry_delay)
+        {
+            on_reconnect_attempt();
+
+            if (Ethernet.begin(mac, 10000))
+            {
+                init_done = true;
+                dhcp_connected = true;
+                link_connected = true;
+            }
+
+            last_dhcp_init_attempt = millis();
+        }
+    }
+    else
+    {
+        if (!is_connected())
+        {
+            if (millis() - last_dhcp_init_attempt < dhcp_retry_delay)
+                return;
+
+            on_reconnect_attempt();
+        }
+
+        int result = Ethernet.maintain();
+
+        if (result == 1 || result == 3) // RENEW_FAIL or REBIND_FAIL
+            dhcp_connected = false;
+        else if (result == 2 || result == 4) // RENEW_OK or REBIND_OK
+            dhcp_connected = true;
+
+        link_connected = Ethernet.linkStatus() != EthernetLinkStatus::LinkOFF;
+
+        last_dhcp_init_attempt = millis();
+    }
 }
 
 namespace
@@ -417,6 +466,9 @@ namespace
 
 load_error http_loader::load(card_db &db, const char *hostname, int port, const char *path)
 {
+    if (!init_done)
+        return load_error::not_connected;
+
     EthernetClient client;
 
     size_t count;
@@ -445,6 +497,8 @@ namespace
         const char truncated[] = "TCP packet truncated";
         const char invalid_response[] = "Invalid TCP response";
 
+        const char not_connected[] = "Not connected";
+
         const char timed_out[] = "Time out while waiting for HTTP response";
         const char malformed_response[] = "Malformed HTTP response";
         const char bad_status_code[] = "Unexpected status code";
@@ -471,6 +525,9 @@ const char *http_loader::get_load_error_message(load_error error)
         return messages::truncated;
     case load_error::invalid_response:
         return messages::invalid_response;
+
+    case load_error::not_connected:
+        return messages::not_connected;
 
     case load_error::timed_out:
         return messages::timed_out;

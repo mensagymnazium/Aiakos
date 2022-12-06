@@ -13,7 +13,6 @@ static_card_db<4096> db;
 
 const unsigned long refresh_rate = 15 * 60 * 1000;
 unsigned long last_refresh = (unsigned long)-refresh_rate;
-const unsigned long dhcp_retry_delay = 10 * 1000;
 
 cooldown<5> activation_cooldown(60 * 1000);
 
@@ -43,14 +42,7 @@ void setup()
     uint_least8_t mac_copy[6];
     memcpy(mac_copy, config::mac, sizeof(config::mac));
 
-    while (http_loader::init(mac_copy))
-    {
-        Serial.println("Failed to connect to LAN");
-
-        led::fail.set_override(true);
-        delay(dhcp_retry_delay);
-        led::fail.set_override(false);
-    }
+    http_loader::init(mac_copy);
 }
 
 void loop()
@@ -59,8 +51,14 @@ void loop()
     led::ok.update();
     led::fail.update();
 
-    led::ready.set(activation_cooldown.is_cold() && db.get_size() > 0);
-    led::fail.set_override(!activation_cooldown.is_cold());
+    bool blink_state = (millis() & 0x300) == 0;
+
+    bool is_cold = activation_cooldown.is_cold();
+    bool no_internet = !http_loader::is_connected();
+    bool db_populated = db.get_size() > 0;
+
+    led::ready.set(is_cold && db_populated);
+    led::fail.set_override(!is_cold || (no_internet && blink_state));
 
     if (!lock.is_active())
     {
@@ -103,6 +101,9 @@ void loop()
             last_refresh += refresh_rate;
         }
 
-        http_loader::maintain();
+        http_loader::maintain([]
+                              {
+            if (!http_loader::is_connected())
+                led::fail.set_override(true); });
     }
 }

@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <functional>
 
 #include <card_db.hpp>
 
@@ -13,6 +14,8 @@ enum load_error
     invalid_server = -2,
     truncated = -3,
     invalid_response = -4,
+
+    not_connected = -100,
 
     timed_out = 1,
     malformed_response = 2,
@@ -26,8 +29,9 @@ enum load_error
 
 namespace http_loader
 {
-    int init(uint_least8_t mac[6]);
-    void maintain();
+    void init(uint_least8_t mac[6]);
+    void maintain(std::function<void()> on_reconnect_attempt);
+    bool is_connected();
     load_error load(card_db &db, const char *hostname, int port, const char *path);
     const char *get_load_error_message(load_error error);
 };
