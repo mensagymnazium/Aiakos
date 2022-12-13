@@ -11,8 +11,9 @@
 
 static_card_db<4096> db;
 
-const unsigned long refresh_rate = 15 * 60 * 1000;
-unsigned long last_refresh = (unsigned long)-refresh_rate;
+const unsigned long idle_refresh_rate = 15 * 60 * 1000;
+const unsigned long disconnected_refresh_rate = 15 * 1000;
+unsigned long last_refresh = (unsigned long)-idle_refresh_rate;
 
 cooldown<5> activation_cooldown(60 * 1000);
 
@@ -43,6 +44,11 @@ void setup()
     memcpy(mac_copy, config::mac, sizeof(config::mac));
 
     http_loader::init(mac_copy);
+}
+
+unsigned long get_refresh_rate()
+{
+    return db.get_size() > 0 ? idle_refresh_rate : disconnected_refresh_rate;
 }
 
 void loop()
@@ -86,7 +92,7 @@ void loop()
             }
         }
 
-        if (millis() - last_refresh > refresh_rate)
+        if (millis() - last_refresh > get_refresh_rate())
         {
             led::ready.set(false);
             Serial.println("Fetching card list...");
@@ -98,7 +104,7 @@ void loop()
 
             Serial.println(http_loader::get_load_error_message(error));
 
-            last_refresh += refresh_rate;
+            last_refresh = millis();
         }
 
         http_loader::maintain([]
