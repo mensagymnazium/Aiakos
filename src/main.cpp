@@ -108,6 +108,6 @@ void loop()
         }
 
         http_loader::maintain([]
-                              { led::fail.set_override(true); });
+                              { led::fail.set_override(true); Serial.println("Attempting connection"); });
     }
 }
