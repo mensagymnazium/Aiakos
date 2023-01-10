@@ -416,7 +416,7 @@ namespace
                 {
                     uint_least8_t digit = decode_digit(c);
 
-                    if (card_id < (UINT32_MAX / 10) || digit <= (UINT32_MAX % 10))
+                    if (card_id < (UINT32_MAX / 10) || (digit <= (UINT32_MAX % 10) && card_id <= (UINT32_MAX / 10)))
                     {
                         card_id *= 10;
                         card_id += digit;
