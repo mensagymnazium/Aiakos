@@ -429,7 +429,7 @@ namespace
                         return load_error::malformed_file;
                     }
                 }
-                else if (!is_whitespace(c) && c != '-' && c != '.')
+                else if (!is_whitespace(c) && c != '-' && c != '_' && c != '.')
                 {
                     return load_error::malformed_file;
                 }
