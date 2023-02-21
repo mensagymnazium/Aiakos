@@ -32,14 +32,13 @@ The green light will flash briefly whenever the device is successfully unlocked.
 
 The red and blue light can be used together to get a overview of the current device state.
 
-| Blue     | Red      | Meaning                                                                                                               |
-| -------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
-| Off      | Off      | The device is busy doing network communication, or turned off.                                                        |
-| Off      | Blinking | *impossible*                                                                                                          |
-| Off      | On       | The device is in cooldown mode to prevent the lock from overheating. It should be ready within 60 seconds.            |
-| Blinking | Off      | The device is connected to the network but eiter failed to connect to the server or downloaded an empty card list.    |
-| Blinking | Blinking | The device failed to connect to the network or obtain a DHCP lease.                                                   |
-| Blinking | On       | *impossible*                                                                                                          |
-| On       | Off      | The device has a non-empty card list and is ready to accept cards.                                                    |
-| On       | Blinking | The device got disconnected from the network or failed to renew its DHCP lease. It still has the card list in memory. |
-| On       | On       | *impossible*                                                                                                          |
+| Blue     | Red              | Meaning                                                                                                               |
+| -------- | ---------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Off      | Off              | The device is busy doing network communication, or turned off.                                                        |
+| Off      | On               | The lock is in cooldown mode to prevent it from overheating. It should be ready within 60 seconds.                    |
+| Blinking | Off              | The device is connected to the network but eiter failed to connect to the server or downloaded an empty card list.    |
+| Blinking | Blinking (short) | Downloading the card list from the server has failed. The server is unreachable or the file is malformed.             |
+| Blinking | Blinking (long)  | The device failed to connect to the network or obtain a DHCP lease.                                                   |
+| On       | Off              | The device has a non-empty card list and is ready to accept cards.                                                    |
+| On       | Blinking (short) | The last attempt to download the card list failed. The device still has the old card list in memory.                  |
+| On       | Blinking (long)  | The device got disconnected from the network or failed to renew its DHCP lease. It still has the card list in memory. |

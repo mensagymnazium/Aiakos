@@ -15,6 +15,8 @@ const unsigned long idle_refresh_rate = 15 * 60 * 1000;
 const unsigned long disconnected_refresh_rate = 15 * 1000;
 unsigned long last_refresh = (unsigned long)-idle_refresh_rate;
 
+bool last_download_successful = false;
+
 cooldown<5> activation_cooldown(60 * 1000);
 
 impulse_pin lock(6, 1000);
@@ -48,7 +50,7 @@ void setup()
 
 unsigned long get_refresh_rate()
 {
-    return db.get_size() > 0 ? idle_refresh_rate : disconnected_refresh_rate;
+    return last_download_successful ? idle_refresh_rate : disconnected_refresh_rate;
 }
 
 void report_reconnect()
@@ -65,14 +67,15 @@ void loop()
     led::ok.update();
     led::fail.update();
 
-    bool blink_state = (millis() & 0x300) == 0;
+    bool blink_state_short = (millis() & 0x300) == 0;
+    bool blink_state_long = (millis() & 0x200) == 0;
 
     bool is_cold = activation_cooldown.is_cold();
     bool no_internet = !http_loader::is_connected();
     bool db_populated = db.get_size() > 0;
 
-    led::ready.set(is_cold && (db_populated || blink_state));
-    led::fail.set_override(!is_cold || (no_internet && blink_state));
+    led::ready.set(is_cold && (db_populated || blink_state_short));
+    led::fail.set_override(!is_cold || (no_internet && blink_state_long) || (!last_download_successful && blink_state_short));
     led::ok.set_override(false);
 
     if (!lock.is_active())
@@ -115,6 +118,7 @@ void loop()
 
             load_error error = http_loader::load(db, config::url::hostname, config::url::port, config::url::path);
 
+            last_download_successful = error == load_error::success;
             if (error != load_error::success)
                 led::fail.activate();
 
