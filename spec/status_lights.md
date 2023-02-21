@@ -24,7 +24,7 @@ The red light is used to signalize various states that prevent normal operation.
 
 The red light will also briefly flash whenever a card not on the card list is scanned, as well as whenever the device fails to connect to the server.
 
-## Green (ok)
+## Green (OK)
 
 The green light will flash briefly whenever the device is successfully unlocked. It has no other use.
 
@@ -36,7 +36,7 @@ The red and blue light can be used together to get a overview of the current dev
 | -------- | ---------------- | --------------------------------------------------------------------------------------------------------------------- |
 | Off      | Off              | The device is busy doing network communication, or turned off.                                                        |
 | Off      | On               | The lock is in cooldown mode to prevent it from overheating. It should be ready within 60 seconds.                    |
-| Blinking | Off              | The device is connected to the network but eiter failed to connect to the server or downloaded an empty card list.    |
+| Blinking | Off              | The device is connected to the network but either failed to connect to the server or downloaded an empty card list.   |
 | Blinking | Blinking (short) | Downloading the card list from the server has failed. The server is unreachable or the file is malformed.             |
 | Blinking | Blinking (long)  | The device failed to connect to the network or obtain a DHCP lease.                                                   |
 | On       | Off              | The device has a non-empty card list and is ready to accept cards.                                                    |
