@@ -51,6 +51,14 @@ unsigned long get_refresh_rate()
     return db.get_size() > 0 ? idle_refresh_rate : disconnected_refresh_rate;
 }
 
+void report_reconnect()
+{
+    led::ready.set(false);
+    led::fail.set_override(false);
+    led::ok.set_override(false);
+    Serial.println("Attempting connection");
+}
+
 void loop()
 {
     lock.update();
@@ -63,8 +71,9 @@ void loop()
     bool no_internet = !http_loader::is_connected();
     bool db_populated = db.get_size() > 0;
 
-    led::ready.set(is_cold && db_populated);
+    led::ready.set(is_cold && (db_populated || blink_state));
     led::fail.set_override(!is_cold || (no_internet && blink_state));
+    led::ok.set_override(false);
 
     if (!lock.is_active())
     {
@@ -80,8 +89,11 @@ void loop()
             {
                 Serial.println("Access granted");
 
-                activation_cooldown.activate();
-                lock.activate();
+                if (activation_cooldown.activate())
+                {
+                    lock.activate();
+                }
+
                 led::ok.activate();
             }
             else
@@ -92,9 +104,13 @@ void loop()
             }
         }
 
+        http_loader::maintain(report_reconnect);
+
         if (millis() - last_refresh > get_refresh_rate())
         {
             led::ready.set(false);
+            led::fail.set_override(false);
+            led::ok.set_override(false);
             Serial.println("Fetching card list...");
 
             load_error error = http_loader::load(db, config::url::hostname, config::url::port, config::url::path);
@@ -106,8 +122,5 @@ void loop()
 
             last_refresh = millis();
         }
-
-        http_loader::maintain([]
-                              { led::fail.set_override(true); Serial.println("Attempting connection"); });
     }
 }
