@@ -25,6 +25,7 @@ enum load_error
     too_many_cards = 6,
     payload_truncated = 7,
     no_content_length = 8,
+    bad_transfer_encoding = 9,
 
     unknown_error = 100
 };

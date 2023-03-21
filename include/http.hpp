@@ -40,27 +40,42 @@ class response_parser
         header_space,
         header_value,
         payload,
+        chunked_crlf,
+        chunked_size,
+        chunked_header,
+        chunked_payload,
         done
     } stage;
 
     enum header
     {
         content_length,
+        transfer_encoding,
         unknown
     } current_header;
+
+    enum transfer_encoding
+    {
+        none,
+        chunked
+    } encoding;
 
     bool is_header_line_empty;
 
     bool has_content_length;
-    uint32_t remaining_content_length;
+    uint32_t remaining_length;
+    uint32_t length;
 
     chars::string_checker http_version;
     chars::string_checker status_code_ok;
     chars::string_checker content_length_header;
+    chars::string_checker transfer_encoding_header;
+    chars::string_checker chunked_value;
 
     file_parser *inner;
 
     void next_header();
+    load_error finish();
     load_error begin_payload();
 
 public:

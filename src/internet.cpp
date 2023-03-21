@@ -168,6 +168,7 @@ namespace
         const char too_many_cards[] = "Too many cards on card list";
         const char payload_truncated[] = "Connection closed, response truncated";
         const char no_content_length[] = "Failed to determine content length";
+        const char bad_transfer_encoding[] = "Server used unknown transfer encoding";
 
         const char unknown_error[] = "Unknown error";
     }
@@ -208,6 +209,8 @@ const char *http_loader::get_load_error_message(load_error error)
         return messages::payload_truncated;
     case load_error::no_content_length:
         return messages::no_content_length;
+    case load_error::bad_transfer_encoding:
+        return messages::bad_transfer_encoding;
 
     default:
         return messages::unknown_error;
