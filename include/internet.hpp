@@ -23,6 +23,8 @@ enum load_error
     too_long = 4,
     malformed_file = 5,
     too_many_cards = 6,
+    payload_truncated = 7,
+    no_content_length = 8,
 
     unknown_error = 100
 };

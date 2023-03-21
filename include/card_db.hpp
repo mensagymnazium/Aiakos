@@ -5,14 +5,14 @@
 
 struct card
 {
-    uint_least32_t id;
+    uint32_t id;
 };
 
 class card_db
 {
 public:
     virtual int load_cards(card *new_cards, size_t new_card_count) = 0;
-    virtual bool has_card(uint_least32_t id) = 0;
+    virtual bool has_card(uint32_t id) = 0;
     virtual size_t get_capacity() = 0;
     virtual size_t get_size() = 0;
     virtual card *begin() = 0;
@@ -29,7 +29,7 @@ public:
     static_card_db() {}
 
     virtual int load_cards(card *new_cards, size_t new_card_count);
-    virtual bool has_card(uint_least32_t id);
+    virtual bool has_card(uint32_t id);
     virtual size_t get_capacity();
     virtual size_t get_size();
     virtual card *begin();
@@ -37,7 +37,7 @@ public:
 };
 
 template <size_t capacity>
-bool static_card_db<capacity>::has_card(uint_least32_t id)
+bool static_card_db<capacity>::has_card(uint32_t id)
 {
     bool found = false;
 
