@@ -19,13 +19,13 @@ bool last_download_successful = false;
 
 cooldown<5> activation_cooldown(60 * 1000);
 
-impulse_pin lock(6, 1000);
+impulse_pin lock(17, 1000);
 
 namespace led
 {
-    output_pin ready(10);
-    impulse_pin ok(11, 250);
-    impulse_pin fail(12, 250);
+    output_pin ready(8);
+    impulse_pin ok(9, 250);
+    impulse_pin fail(10, 250);
 }
 
 Rdm6300 reader;

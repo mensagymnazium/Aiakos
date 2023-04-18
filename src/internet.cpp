@@ -27,7 +27,7 @@ namespace
 
 void http_loader::init(uint_least8_t mac_address[6])
 {
-    Ethernet.init(17);
+    Ethernet.init(13);
 
     memcpy(mac, mac_address, sizeof(mac));
 }
