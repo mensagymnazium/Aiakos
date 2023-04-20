@@ -9,7 +9,7 @@ void ethernet::maintain(std::function<void()> on_reconnect_attempt)
 {
     if (this->phase == ethernet::init_phase::none)
     {
-        Ethernet.init(17);
+        Ethernet.init(13);
         this->phase = ethernet::init_phase::spi;
     }
 
