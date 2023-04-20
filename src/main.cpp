@@ -41,11 +41,6 @@ void setup()
     Serial1.begin(RDM6300_BAUDRATE);
 
     reader.begin(&Serial1);
-
-    uint_least8_t mac_copy[6];
-    memcpy(mac_copy, config::mac, sizeof(config::mac));
-
-    http_loader::init(mac_copy);
 }
 
 unsigned long get_refresh_rate()

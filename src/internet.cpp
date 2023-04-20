@@ -10,72 +10,23 @@
 #include <chars.hpp>
 #include <http.hpp>
 #include <file_parser.hpp>
+#include <ethernet.hpp>
+#include <aiakos_config.hpp>
 
 namespace
 {
     const int http_timeout = 10000;
-
-    const unsigned long dhcp_retry_delay = 60 * 1000;
-
-    uint_least8_t mac[6] = {};
-    bool init_done = false;
-    unsigned long last_dhcp_init_attempt = (unsigned long)-dhcp_retry_delay;
-
-    bool dhcp_connected = false;
-    bool link_connected = false;
-}
-
-void http_loader::init(uint_least8_t mac_address[6])
-{
-    Ethernet.init(13);
-
-    memcpy(mac, mac_address, sizeof(mac));
+    ethernet link(config::mac);
 }
 
 bool http_loader::is_connected()
 {
-    return dhcp_connected && link_connected;
+    return link.is_connected();
 }
 
 void http_loader::maintain(std::function<void()> on_reconnect_attempt)
 {
-    if (!init_done)
-    {
-        if (millis() - last_dhcp_init_attempt >= dhcp_retry_delay)
-        {
-            on_reconnect_attempt();
-
-            if (Ethernet.begin(mac, 10000))
-            {
-                init_done = true;
-                dhcp_connected = true;
-                link_connected = true;
-            }
-
-            last_dhcp_init_attempt = millis();
-        }
-    }
-    else
-    {
-        if (!is_connected())
-        {
-            if (millis() - last_dhcp_init_attempt < dhcp_retry_delay)
-                return;
-
-            on_reconnect_attempt();
-        }
-
-        int result = Ethernet.maintain();
-
-        if (result == 1 || result == 3) // RENEW_FAIL or REBIND_FAIL
-            dhcp_connected = false;
-        else if (result == 2 || result == 4) // RENEW_OK or REBIND_OK
-            dhcp_connected = true;
-
-        link_connected = Ethernet.linkStatus() != EthernetLinkStatus::LinkOFF;
-
-        last_dhcp_init_attempt = millis();
-    }
+    link.maintain(on_reconnect_attempt);
 }
 
 namespace
@@ -129,7 +80,7 @@ namespace
 
 load_error http_loader::load(card_db &db, const char *hostname, int port, const char *path)
 {
-    if (!init_done)
+    if (!link.is_connected())
         return load_error::not_connected;
 
     EthernetClient client;
