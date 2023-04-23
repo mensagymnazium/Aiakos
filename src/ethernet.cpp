@@ -62,7 +62,7 @@ load_error ethernet_socket::connect(const char *host, uint16_t port)
 {
     switch (client.connect(host, port))
     {
-    case 0:
+    case 1:
         return load_error::success;
     case -1:
         return load_error::connection_timed_out;
