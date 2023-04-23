@@ -16,7 +16,7 @@
 namespace
 {
     const int http_timeout = 10000;
-    ethernet link(config::mac);
+    config::network link(config::network_config);
 }
 
 bool http_loader::is_connected()
@@ -29,73 +29,46 @@ void http_loader::maintain(std::function<void()> on_reconnect_attempt)
     link.maintain(on_reconnect_attempt);
 }
 
-namespace
-{
-    load_error load_impl(EthernetClient &client, file_parser &payload_parser, const char *hostname, int port, const char *path)
-    {
-        int connection_status = client.connect(hostname, port);
-        if (connection_status < 0)
-        {
-            switch (connection_status)
-            {
-            case -1:
-                return load_error::connection_timed_out;
-            case -2:
-                return load_error::invalid_server;
-            case -3:
-                return load_error::truncated;
-            case -4:
-                return load_error::invalid_response;
-            default:
-                return load_error::unknown_error;
-            }
-        }
-
-        unsigned long connection_time = millis();
-
-        write_request(client, hostname, path);
-
-        response_parser parser(&payload_parser);
-
-        while (client.connected() && !parser.is_done())
-        {
-            while (!client.available())
-            {
-                if (millis() - connection_time > http_timeout)
-                    return load_error::timed_out;
-            }
-
-            uint8_t b = client.read();
-
-            load_error result = parser.process_byte(b);
-            if (result != load_error::success)
-            {
-                return result;
-            }
-        }
-
-        return parser.end();
-    }
-}
-
 load_error http_loader::load(card_db &db, const char *hostname, int port, const char *path)
 {
     if (!link.is_connected())
         return load_error::not_connected;
 
-    EthernetClient client;
+    auto client = link.socket();
+    load_error connect_error = client.connect(hostname, port);
 
-    file_parser parser(db.get_capacity());
+    if (connect_error != load_error::success)
+        return connect_error;
 
-    load_error result = load_impl(client, parser, hostname, port, path);
+    unsigned long connection_time = millis();
 
-    if (result == load_error::success)
+    write_request(client, hostname, path);
+
+    file_parser payload_parser(db.get_capacity());
+    response_parser http_parser(&payload_parser);
+
+    while (client.connected() && !http_parser.is_done())
     {
-        db.load_cards(parser.cards, parser.card_count);
+        while (!client.available())
+        {
+            if (millis() - connection_time > http_timeout)
+                return load_error::timed_out;
+        }
+
+        uint8_t b = client.read();
+
+        load_error result = http_parser.process_byte(b);
+        if (result != load_error::success)
+            return result;
     }
 
-    client.stop();
-    return result;
+    load_error result = http_parser.end();
+    if (result != load_error::success)
+        return result;
+
+    db.load_cards(payload_parser.cards, payload_parser.card_count);
+
+    return load_error::success;
 }
 
 namespace

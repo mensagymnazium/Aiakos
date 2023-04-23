@@ -1,8 +1,8 @@
 #include <ethernet.hpp>
 
-ethernet::ethernet(const uint8_t *mac)
+ethernet::ethernet(ethernet_config config)
 {
-    memcpy(this->mac, mac, 6 * sizeof(uint8_t));
+    memcpy(this->mac, config.mac, 6 * sizeof(uint8_t));
 }
 
 void ethernet::maintain(std::function<void()> on_reconnect_attempt)
@@ -56,4 +56,23 @@ void ethernet::maintain(std::function<void()> on_reconnect_attempt)
 bool ethernet::is_connected()
 {
     return this->dhcp_ok && this->link_ok;
+}
+
+load_error ethernet_socket::connect(const char *host, uint16_t port)
+{
+    switch (client.connect(host, port))
+    {
+    case 0:
+        return load_error::success;
+    case -1:
+        return load_error::connection_timed_out;
+    case -2:
+        return load_error::invalid_server;
+    case -3:
+        return load_error::truncated;
+    case -4:
+        return load_error::invalid_response;
+    default:
+        return load_error::unknown_error;
+    }
 }

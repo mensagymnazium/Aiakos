@@ -14,19 +14,19 @@ namespace
 template <typename client>
 void write_request(client &c, const char *hostname, const char *path)
 {
-    c.print("GET ");
-    c.print(path);
-    c.print(" HTTP/1.1\r\n");
+    c.write("GET ");
+    c.write(path);
+    c.write(" HTTP/1.1\r\n");
 
-    c.print("Host: ");
-    c.print(hostname);
-    c.print("\r\n");
+    c.write("Host: ");
+    c.write(hostname);
+    c.write("\r\n");
 
-    c.print("User-Agent: ");
-    c.print(user_agent);
-    c.print("\r\n");
+    c.write("User-Agent: ");
+    c.write(user_agent);
+    c.write("\r\n");
 
-    c.print("\r\n");
+    c.write("\r\n");
 }
 
 class response_parser

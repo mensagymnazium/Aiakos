@@ -32,7 +32,6 @@ enum load_error
 
 namespace http_loader
 {
-    void init(uint_least8_t mac[6]);
     void maintain(std::function<void()> on_reconnect_attempt);
     bool is_connected();
     load_error load(card_db &db, const char *hostname, int port, const char *path);

@@ -6,13 +6,28 @@
 #include <Ethernet.h>
 #include <EthernetClient.h>
 
+#include <internet.hpp>
+
+struct ethernet_config
+{
+    const uint8_t *mac;
+
+    constexpr ethernet_config(const uint8_t mac[6]) : mac(mac) {}
+};
+
 class ethernet_socket
 {
     EthernetClient client;
 
 public:
-    ethernet_socket(const char *host, uint16_t port);
-    ~ethernet_socket();
+    inline ethernet_socket() {}
+    inline ~ethernet_socket() { client.stop(); }
+
+    load_error connect(const char *host, uint16_t port);
+    bool connected() { return client.connected(); }
+    bool available() { return client.available(); }
+    char read() { return client.read(); }
+    void write(const char *s) { client.write(s); }
 };
 
 class ethernet
@@ -35,9 +50,9 @@ class ethernet
     unsigned long last_dhcp_init_attempt = -dhcp_retry_delay;
 
 public:
-    ethernet(const uint8_t *mac);
+    ethernet(ethernet_config config);
 
     void maintain(std::function<void()> on_reconnect_attempt);
     bool is_connected();
-    ethernet_socket connect(const char *host, uint16_t port);
+    inline ethernet_socket socket() { return {}; };
 };
