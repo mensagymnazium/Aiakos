@@ -12,7 +12,7 @@ namespace config
     {
         const char hostname[] = "storage.googleapis.com";
         const int port = 80;
-        const char path[] = "/ikaros-static/cardlist.txt";
+        const char path[] = "/bucket/cardlist.txt";
     }
 
     const uint32_t master_card_id = 0;
